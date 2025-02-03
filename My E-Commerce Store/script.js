@@ -1,136 +1,205 @@
-/***********************************************
-  WARNING: This is a demo implementation only.
-  Never store passwords in plain text in real apps.
-  Use proper backend authentication.
-***********************************************/
-
-// =================== Cart Functionality ===================
-let cart = JSON.parse(localStorage.getItem('cart')) || [];
-let cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
-
-// Initialize cart on page load
-document.addEventListener('DOMContentLoaded', () => {
-    updateCartCount();
-    updateAuthUI();
-});
-
-function addToCart(name, price) {
-    const existingItem = cart.find(item => item.name === name);
-    
-    if (existingItem) {
-        existingItem.quantity++;
-    } else {
-        cart.push({ name, price, quantity: 1 });
-    }
-    
-    cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-    localStorage.setItem('cart', JSON.stringify(cart));
-    updateCartCount();
-    alert(`${name} added to cart!`);
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    min-height: 100vh;
+    position: relative;
 }
 
-function updateCartCount() {
-    document.getElementById('cart-count').textContent = cartCount;
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-// =================== Authentication ===================
-const users = JSON.parse(localStorage.getItem('users')) || [];
-const loginModal = document.getElementById('loginModal');
-const signupModal = document.getElementById('signupModal');
-
-// Auth UI Management
-function updateAuthUI() {
-    const authButtons = document.querySelector('.auth-buttons');
-    const userGreeting = document.querySelector('.user-greeting');
-    
-    if (currentUser) {
-        authButtons.style.display = 'none';
-        userGreeting.innerHTML = `
-            Welcome, ${currentUser.username}!
-            <button onclick="logout()">Logout</button>
-        `;
-    } else {
-        authButtons.style.display = 'flex';
-        userGreeting.innerHTML = '';
-    }
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
 }
 
-// Login
-document.getElementById('loginForm').addEventListener('submit', e => {
-    e.preventDefault();
-    const username = document.getElementById('loginUsername').value;
-    const password = document.getElementById('loginPassword').value;
-
-    const user = users.find(u => 
-        u.username === username && u.password === password
-    );
-
-    if (user) {
-        currentUser = user;
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        loginModal.style.display = 'none';
-        updateAuthUI();
-        alert(`Welcome back, ${username}!`);
-    } else {
-        alert('Invalid credentials!');
-    }
-});
-
-// Signup
-document.getElementById('signupForm').addEventListener('submit', e => {
-    e.preventDefault();
-    const username = document.getElementById('signupUsername').value;
-    const password = document.getElementById('signupPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-
-    if (password !== confirmPassword) {
-        alert("Passwords don't match!");
-        return;
-    }
-
-    if (users.some(u => u.username === username)) {
-        alert('Username taken!');
-        return;
-    }
-
-    users.push({ username, password });
-    localStorage.setItem('users', JSON.stringify(users));
-    signupModal.style.display = 'none';
-    alert('Account created! Please login.');
-});
-
-// Logout
-function logout() {
-    currentUser = null;
-    localStorage.removeItem('currentUser');
-    updateAuthUI();
+.auth-buttons {
+    display: flex;
+    gap: 10px;
 }
 
-// =================== Modal Management ===================
-document.querySelectorAll('.auth-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.getElementById(`${btn.dataset.modal}Modal`).style.display = 'block';
-    });
-});
+.auth-buttons button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
 
-document.querySelectorAll('.close').forEach(btn => {
-    btn.addEventListener('click', () => {
-        loginModal.style.display = 'none';
-        signupModal.style.display = 'none';
-        document.querySelectorAll('form').forEach(form => form.reset());
-    });
-});
+.login-btn {
+    background-color: #007bff;
+    color: #fff;
+}
 
-window.addEventListener('click', e => {
-    if (e.target === loginModal || e.target === signupModal) {
-        e.target.style.display = 'none';
-        document.querySelectorAll('form').forEach(form => form.reset());
-    }
-});
+.login-btn:hover {
+    background-color: #0056b3;
+}
 
-document.getElementById('showSignup').addEventListener('click', e => {
-    e.preventDefault();
-    loginModal.style.display = 'none';
-    signupModal.style.display = 'block';
-});
+.signup-btn {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.signup-btn:hover {
+    background-color: #218838;
+}
+
+.cart {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.cart i {
+    font-size: 20px;
+}
+
+.cart span {
+    background-color: #ff5722;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 50%;
+    font-size: 12px;
+}
+
+main {
+    padding: 20px;
+    padding-bottom: 60px; /* Prevent footer overlap */
+}
+
+.product-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.product {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    width: 200px;
+    text-align: center;
+}
+
+.product img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+}
+
+.product h2 {
+    font-size: 18px;
+    margin: 10px 0;
+}
+
+.product p {
+    font-size: 16px;
+    color: #333;
+}
+
+.product button {
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.product button:hover {
+    background-color: #218838;
+}
+
+footer {
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 10px 0;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+}
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 15% auto;
+    padding: 20px;
+    width: 300px;
+    border-radius: 5px;
+    position: relative;
+}
+
+.modal-content form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modal-content input {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.modal-content button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.modal-content button:hover {
+    background-color: #0056b3;
+}
+
+.close {
+    position: absolute;
+    right: 20px;
+    top: 10px;
+    font-size: 24px;
+    cursor: pointer;
+}
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 5px;
+    color: white;
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification.success { background: #28a745; }
+.notification.error { background: #dc3545; }
+
+@keyframes slideIn {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
