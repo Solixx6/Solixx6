@@ -1,205 +1,165 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
-    min-height: 100vh;
-    position: relative;
+/***********************************************
+  WARNING: Frontend-only demo. Not secure for production.
+  Always use proper backend authentication in real apps.
+***********************************************/
+
+// =================== Global Variables ===================
+let cart = JSON.parse(localStorage.getItem('cart')) || [];
+let users = JSON.parse(localStorage.getItem('users')) || [];
+let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+
+// =================== Cart Functionality ===================
+function addToCart(name, price) {
+    const existingItem = cart.find(item => item.name === name);
+    
+    if (existingItem) {
+        existingItem.quantity++;
+    } else {
+        cart.push({ 
+            name, 
+            price, 
+            quantity: 1,
+            id: Date.now().toString()
+        });
+    }
+    
+    updateCartStorage();
+    showNotification(`${name} added to cart!`);
 }
 
-header {
-    background-color: #333;
-    color: #fff;
-    padding: 10px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+function updateCartStorage() {
+    localStorage.setItem('cart', JSON.stringify(cart));
+    updateCartCount();
 }
 
-.header-right {
-    display: flex;
-    align-items: center;
-    gap: 20px;
+function updateCartCount() {
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    document.getElementById('cart-count').textContent = count;
 }
 
-.auth-buttons {
-    display: flex;
-    gap: 10px;
+// =================== User Authentication ===================
+function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
+
+    const user = users.find(u => 
+        u.username === username && u.password === password
+    );
+
+    if (user) {
+        currentUser = user;
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        closeModals();
+        updateAuthUI();
+        showNotification(`Welcome back, ${username}!`);
+    } else {
+        showNotification('Invalid credentials!', 'error');
+    }
 }
 
-.auth-buttons button {
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: bold;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+function handleSignup(e) {
+    e.preventDefault();
+    const username = document.getElementById('signupUsername').value;
+    const password = document.getElementById('signupPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (password !== confirmPassword) {
+        showNotification("Passwords don't match!", 'error');
+        return;
+    }
+
+    if (users.some(u => u.username === username)) {
+        showNotification('Username taken!', 'error');
+        return;
+    }
+
+    const newUser = { username, password };
+    users.push(newUser);
+    localStorage.setItem('users', JSON.stringify(users));
+    
+    showNotification('Account created! Please login.');
+    switchToLogin();
 }
 
-.login-btn {
-    background-color: #007bff;
-    color: #fff;
+function logout() {
+    currentUser = null;
+    localStorage.removeItem('currentUser');
+    updateAuthUI();
+    showNotification('Logged out successfully!');
 }
 
-.login-btn:hover {
-    background-color: #0056b3;
+// =================== UI Management ===================
+function updateAuthUI() {
+    const authButtons = document.querySelector('.auth-buttons');
+    const userGreeting = document.querySelector('.user-greeting');
+    
+    if (currentUser) {
+        authButtons.style.display = 'none';
+        userGreeting.innerHTML = `
+            Welcome, ${currentUser.username}!
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        `;
+        userGreeting.style.display = 'flex';
+    } else {
+        authButtons.style.display = 'flex';
+        userGreeting.style.display = 'none';
+    }
 }
 
-.signup-btn {
-    background-color: #28a745;
-    color: #fff;
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
 }
 
-.signup-btn:hover {
-    background-color: #218838;
+// =================== Modal Management ===================
+function openModal(modalId) {
+    document.getElementById(modalId).style.display = 'flex';
 }
 
-.cart {
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+function closeModals() {
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.style.display = 'none';
+        modal.querySelector('form').reset();
+    });
 }
 
-.cart i {
-    font-size: 20px;
+function switchToLogin() {
+    closeModals();
+    openModal('loginModal');
 }
 
-.cart span {
-    background-color: #ff5722;
-    color: #fff;
-    padding: 2px 8px;
-    border-radius: 50%;
-    font-size: 12px;
-}
+// =================== Event Listeners ===================
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize
+    updateCartCount();
+    updateAuthUI();
 
-main {
-    padding: 20px;
-    padding-bottom: 60px; /* Prevent footer overlap */
-}
+    // Auth Buttons
+    document.querySelector('.login-btn').addEventListener('click', () => openModal('loginModal'));
+    document.querySelector('.signup-btn').addEventListener('click', () => openModal('signupModal'));
 
-.product-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-}
+    // Forms
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    document.getElementById('signupForm').addEventListener('submit', handleSignup);
 
-.product {
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 15px;
-    width: 200px;
-    text-align: center;
-}
+    // Modal Close
+    document.querySelectorAll('.close').forEach(btn => {
+        btn.addEventListener('click', closeModals);
+    });
 
-.product img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 5px;
-}
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) closeModals();
+    });
 
-.product h2 {
-    font-size: 18px;
-    margin: 10px 0;
-}
-
-.product p {
-    font-size: 16px;
-    color: #333;
-}
-
-.product button {
-    background-color: #28a745;
-    color: #fff;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.product button:hover {
-    background-color: #218838;
-}
-
-footer {
-    background-color: #333;
-    color: #fff;
-    text-align: center;
-    padding: 10px 0;
-    position: fixed;
-    width: 100%;
-    bottom: 0;
-}
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-}
-
-.modal-content {
-    background-color: #fff;
-    margin: 15% auto;
-    padding: 20px;
-    width: 300px;
-    border-radius: 5px;
-    position: relative;
-}
-
-.modal-content form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.modal-content input {
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-}
-
-.modal-content button {
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    padding: 10px;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.modal-content button:hover {
-    background-color: #0056b3;
-}
-
-.close {
-    position: absolute;
-    right: 20px;
-    top: 10px;
-    font-size: 24px;
-    cursor: pointer;
-}
-/* Notifications */
-.notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 15px 25px;
-    border-radius: 5px;
-    color: white;
-    z-index: 1000;
-    animation: slideIn 0.3s ease-out;
-}
-
-.notification.success { background: #28a745; }
-.notification.error { background: #dc3545; }
-
-@keyframes slideIn {
-    from { transform: translateX(100%); }
-    to { transform: translateX(0); }
-}
+    // Form switching
+    document.getElementById('showSignup').addEventListener('click', (e) => {
+        e.preventDefault();
+        closeModals();
+        openModal('signupModal');
+    });
+});
